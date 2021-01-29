@@ -1,0 +1,170 @@
+import React, { useEffect, useState } from "react";
+import { makeStyles } from "@material-ui/core/styles";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableContainer from "@material-ui/core/TableContainer";
+import TablePagination from '@material-ui/core/TablePagination';
+import TableRow from "@material-ui/core/TableRow";
+import Paper from "@material-ui/core/Paper";
+import DeleteForeverIcon from "@material-ui/icons/DeleteForever";
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchSITESStart } from '../../../../redux/config_sites/config_sites.actions';
+import { selectSitesList } from '../../../../redux/config_sites/config_sites.selector';
+import Modal from '@material-ui/core/Modal';
+import SitedelForm from './site.del.form';
+import Fade from '@material-ui/core/Fade';
+
+const columns = [
+    { id: 'name', label: 'Available Business Units', minWidth: 170 },
+  ];
+
+const useStyles = makeStyles((theme) => ({
+    root: {
+      width: '100%',
+    },
+    modal: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+      },
+      paper: {
+          backgroundColor: theme.palette.background.paper,
+          padding: theme.spacing(2, 4, 3),
+      },
+      table1: {
+          minWidth: '35em',
+          maxHeight: 300,
+          overflowY: 'auto',
+      },
+      tablecell: {
+          fontSize: "1.1em",
+      },
+      delIcon: {
+          fontSize: '2em',
+          '&:hover': {
+              cursor: 'pointer',
+              color: '#D90429',
+          }
+      },
+  }));
+  
+  export default function StickyHeadTable({searchResult}) {
+    const classes = useStyles();
+    const dispatch = useDispatch()
+    const [page, setPage] = React.useState(0);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const siteData = useSelector(state => selectSitesList(state))
+    const [modalStyle] = React.useState(getModalStyle);
+    const [open, setOpen] = React.useState({});
+  
+    useEffect(() => {
+        dispatch(fetchSITESStart())
+  }, [searchResult])
+  
+  
+    const handleOpen = (id) => {
+      setOpen(
+          {
+              [`setOpen-${id}`]: true
+          }
+      );
+  };
+  
+  const handleClose = () => {
+      setOpen(false);
+  };
+  
+  const body = (rows) => (
+      <div style={modalStyle} className={classes.paper}>
+          <SitedelForm setOpen={setOpen} row={rows} />
+      </div>
+  );
+  
+  const handleBackdropClick = () => {
+      setOpen(false);
+  };
+  
+  
+  
+    const handleChangePage = (event, newPage) => {
+      setPage(newPage);
+    };
+  
+    const handleChangeRowsPerPage = (event) => {
+      setRowsPerPage(+event.target.value);
+      setPage(0);
+    };
+  
+    function rand() {
+      return Math.round(Math.random() * 10) - 10;
+  }
+  
+  function getModalStyle() {
+      const top = 40 + rand();
+      const left = 50 + rand();
+  
+      return {
+          top: `${top}%`,
+          left: `${left}%`,
+          transform: `translate(-${top}%, -${left}%)`,
+      };
+  }
+  
+    return (
+      <Paper className={classes.root}>
+        <TableContainer className={classes.table1} component={Paper} style={{ marginTop: "1.5em" }}>
+          <Table stickyHeader aria-label="sticky table" classes={{root: classes.customTable}}>
+            
+            <TableBody>
+            
+              {(searchResult ?  (siteData.filter((cty) =>
+      cty.name.toLowerCase().includes(searchResult.toLowerCase()))) : siteData ).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                return (
+                  <TableRow key={row.id}>
+                              <TableCell component="th" scope="row" className={classes.tablecell}>
+                                  {row.name}
+                              </TableCell>
+                              <TableCell>
+  
+                                  <DeleteForeverIcon onClick={() => handleOpen(row.id)} fontSize="default" className={classes.delIcon} />
+  
+  
+                                  <Modal
+                                      aria-labelledby="transition-modal-title"
+                                      aria-describedby="transition-modal-description"
+                                      className={classes.modal}
+                                      open={open[`setOpen-${row.id}`]}
+                                      onClose={handleClose}
+                                      closeAfterTransition
+                                      onBackdropClick={handleBackdropClick}
+                                      BackdropProps={{
+                                          timeout: 500,
+                                      }}
+  
+                                  >
+                                      <Fade in={open}>
+                                          {body(row)}
+                                      </Fade>
+                                  </Modal>
+                              </TableCell>
+                          </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 100]}
+          component="div"
+          count={(searchResult ?  (siteData.filter((cty) =>
+            cty.name.toLowerCase().includes(searchResult.toLowerCase()))) : siteData ).length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onChangePage={handleChangePage}
+          onChangeRowsPerPage={handleChangeRowsPerPage}
+        />
+      </Paper>
+    );
+  }
+  
